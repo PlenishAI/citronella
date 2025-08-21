@@ -1,0 +1,3 @@
+{
+    "postCreateCommand": "npm install && cd frontend && npm install && curl -fsSL https://claude.ai/install.sh | sh"
+  }
