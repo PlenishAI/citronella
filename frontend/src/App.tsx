@@ -11,11 +11,20 @@ interface User {
   name: string;
 }
 
+interface Comment {
+  id: string;
+  text: string;
+  author: User;
+  createdAt: string;
+}
+
 interface Post {
   id: string;
   title: string;
   content: string;
   author: User;
+  comments: Comment[];
+  commentCount: number;
 }
 
 interface LoginResponse {
@@ -77,6 +86,29 @@ const GET_POSTS = gql`
         name
         email
       }
+      commentCount
+      comments {
+        id
+        text
+        createdAt
+        author {
+          name
+          email
+        }
+      }
+    }
+  }
+`;
+
+const ADD_COMMENT = gql`
+  mutation AddComment($postId: Int!, $text: String!) {
+    addComment(postId: $postId, text: $text) {
+      id
+      text
+      author {
+        name
+      }
+      createdAt
     }
   }
 `;
@@ -158,8 +190,63 @@ function LoginForm({ onLogin }: LoginFormProps) {
   );
 }
 
+interface CommentFormProps {
+  postId: string;
+  onCommentAdded: () => void;
+}
+
+function CommentForm({ postId, onCommentAdded }: CommentFormProps) {
+  const [commentText, setCommentText] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  const [addComment, { loading }] = useMutation(ADD_COMMENT, {
+    onCompleted: () => {
+      setCommentText('');
+      onCommentAdded();
+    },
+    onError: (error) => {
+      // BUG: Generic error handling, doesn't parse specific errors
+      setErrorMsg('Failed to add comment');
+      console.error('Comment error:', error);
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    
+    // BUG: No client-side validation for empty/whitespace comments
+    // BUG: No trimming of whitespace
+    addComment({ 
+      variables: { 
+        postId: parseInt(postId), // BUG: Type conversion without validation
+        text: commentText 
+      } 
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="comment-form">
+      <input
+        type="text"
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        placeholder="Add a comment..."
+        disabled={loading}
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Adding...' : 'Add Comment'}
+      </button>
+      {errorMsg && <div className="error">{errorMsg}</div>}
+    </form>
+  );
+}
+
 function PostsList() {
-  const { loading, error, data } = useQuery<PostsResponse>(GET_POSTS);
+  const { loading, error, data, refetch } = useQuery<PostsResponse>(GET_POSTS, {
+    // BUG: Aggressive polling causes unnecessary N+1 queries
+    pollInterval: 3000
+  });
 
   if (loading) return <div>Loading posts...</div>;
   if (error) return <div>Error loading posts: {error.message}</div>;
@@ -172,6 +259,17 @@ function PostsList() {
           <h3>{post.title}</h3>
           <p>{post.content}</p>
           <small>By: {post.author.name} ({post.author.email})</small>
+          
+          <div className="comments-section">
+            <h4>Comments ({post.commentCount})</h4>
+            {post.comments.map(comment => (
+              <div key={comment.id} className="comment">
+                <strong>{comment.author.name}</strong>: {comment.text}
+                <small> - {new Date(comment.createdAt).toLocaleDateString()}</small>
+              </div>
+            ))}
+            <CommentForm postId={post.id} onCommentAdded={() => refetch()} />
+          </div>
         </div>
       ))}
     </div>
@@ -197,7 +295,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const { data: meData } = useQuery<MeResponse>(GET_ME, {
+  useQuery<MeResponse>(GET_ME, {
     skip: !localStorage.getItem('token'),
     onCompleted: (data) => {
       if (data.me) {

@@ -1,9 +1,16 @@
 # Debugging Interview Challenge
 
-## 🐛 The Problem
+## 🐛 Known Issues
+
+### Issue 1: Login Case Sensitivity
 Users report login issues with email case sensitivity:
 - ✅ `john@example.com` / `password123` 
 - ❌ `John@Example.com` / `password123`
+
+### Issue 2: Performance & Comments
+- Application becomes slow when viewing posts with comments
+- Server console shows excessive database queries
+- Comments feature has validation issues
 
 ## 🚀 Quick Start
 

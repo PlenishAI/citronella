@@ -22,6 +22,14 @@ interface Post {
   authorId: number;
 }
 
+interface Comment {
+  id: number;
+  text: string;
+  postId: number;
+  userId: number;
+  createdAt: Date;
+}
+
 interface AuthPayload {
   token: string;
   user: Omit<User, 'password'>;
@@ -38,16 +46,46 @@ interface JWTPayload {
 // Mock user database
 const users: User[] = [
   { id: 1, email: 'john@example.com', password: 'password123', name: 'John Doe' },
-  { id: 2, email: 'jane@example.com', password: 'password456', name: 'Jane Smith' },
+  { id: 2, email: 'Jane@example.com', password: 'password456', name: 'Jane Smith' },
   { id: 3, email: 'admin@company.com', password: 'admin123', name: 'Admin User' }
 ];
 
-// Mock posts database
 const posts: Post[] = [
-  { id: 1, title: 'First Post', content: 'This is the first post', authorId: 1 },
-  { id: 2, title: 'Second Post', content: 'This is the second post', authorId: 2 },
-  { id: 3, title: 'Admin Post', content: 'Admin announcement', authorId: 3 }
+  { id: 1, title: 'Getting Started with GraphQL', content: 'GraphQL is a query language for APIs and a runtime for executing those queries.', authorId: 1 },
+  { id: 2, title: 'Understanding React Hooks', content: 'Hooks allow you to use state and other React features without writing a class.', authorId: 2 },
+  { id: 3, title: 'Admin Announcement: New Features', content: 'We are excited to announce several new features coming to our platform.', authorId: 3 },
+  { id: 4, title: 'Performance Optimization Tips', content: 'Here are some key strategies for optimizing your application performance.', authorId: 1 },
+  { id: 5, title: 'Database Best Practices', content: 'Learn about indexing, query optimization, and connection pooling.', authorId: 2 },
+  { id: 6, title: 'Security Update', content: 'Important security patches have been applied to the system.', authorId: 3 },
+  { id: 7, title: 'TypeScript Migration Guide', content: 'A step-by-step guide to migrating your JavaScript project to TypeScript.', authorId: 1 },
+  { id: 8, title: 'Testing Strategies', content: 'Comprehensive testing ensures your application works as expected.', authorId: 2 }
 ];
+
+const comments: Comment[] = [];
+let commentId = 1;
+
+const commentTexts = [
+  'Great post!', 'Thanks for sharing', 'Interesting perspective', 
+  'I disagree with this', 'Can you elaborate?', 'Well said!',
+  'This is helpful', 'I learned something new', 'Good point',
+  'Could you provide more details?', 'Awesome content!', 'Nice work',
+  'I have a question about this', 'Thanks for the explanation', 'Very insightful'
+];
+
+posts.forEach(post => {
+  const numComments = 15 + Math.floor(Math.random() * 6); // 15-20 comments per post
+  for (let i = 0; i < numComments; i++) {
+    const randomUser = users[Math.floor(Math.random() * users.length)];
+    const randomText = commentTexts[Math.floor(Math.random() * commentTexts.length)];
+    comments.push({
+      id: commentId++,
+      text: `${randomText} (Comment ${i + 1})`,
+      postId: post.id,
+      userId: randomUser.id,
+      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date within last 30 days
+    });
+  }
+});
 
 const typeDefs = gql`
   type User {
@@ -61,6 +99,15 @@ const typeDefs = gql`
     title: String!
     content: String!
     author: User!
+    comments: [Comment!]!
+    commentCount: Int!
+  }
+
+  type Comment {
+    id: ID!
+    text: String!
+    author: User!
+    createdAt: String!
   }
 
   type AuthPayload {
@@ -75,6 +122,7 @@ const typeDefs = gql`
 
   type Mutation {
     login(email: String!, password: String!): AuthPayload
+    addComment(postId: Int!, text: String!): Comment
   }
 `;
 
@@ -111,6 +159,32 @@ const resolvers = {
           name: user.name
         }
       };
+    },
+    
+    addComment: (parent: any, { postId, text }: { postId: number; text: string }, context: Context): Comment => {
+      
+      if (!context.user) {
+        // BUG: Generic error message, doesn't specify authentication is needed
+        throw new Error('Error adding comment');
+      }
+      
+      if (!text) {
+        throw new Error('Comment text is required');
+      }
+      
+      // This could cause orphaned comments
+      
+      const newComment: Comment = {
+        id: comments.length + 1,
+        text: text,
+        postId: postId,
+        userId: context.user.id,
+        createdAt: new Date()
+      };
+      
+      comments.push(newComment);
+      
+      return newComment;
     }
   },
 
@@ -123,6 +197,42 @@ const resolvers = {
         email: user.email,
         name: user.name
       };
+    },
+    
+    comments: (post: Post): Comment[] => {
+      console.log(`Fetching comments for post ${post.id}`); // This will show the N+1 problem
+      // Simulate database query delay to make performance issue noticeable
+      const start = Date.now();
+      while (Date.now() - start < 50) {} // 50ms delay per query
+      
+      const postComments = comments.filter(c => c.postId === post.id);
+      return postComments;
+    },
+    
+    commentCount: (post: Post): number => {
+      console.log(`Counting comments for post ${post.id}`);
+      return comments.filter(c => c.postId === post.id).length;
+    }
+  },
+  
+  Comment: {
+    author: (comment: Comment): Omit<User, 'password'> | undefined => {
+      console.log(`Fetching author for comment ${comment.id}`);
+      // Simulate database query delay
+      const start = Date.now();
+      while (Date.now() - start < 10) {} // 10ms delay per comment author query
+      
+      const user = users.find(u => u.id === comment.userId);
+      if (!user) return undefined;
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      };
+    },
+    
+    createdAt: (comment: Comment): string => {
+      return comment.createdAt.toISOString();
     }
   }
 };
@@ -157,12 +267,11 @@ async function startServer(): Promise<void> {
     typeDefs,
     resolvers,
     context,
-    introspection: true,
-    playground: true
+    introspection: true
   });
 
   await server.start();
-  server.applyMiddleware({ app, path: '/graphql' });
+  server.applyMiddleware({ app: app as any, path: '/graphql' });
 
   const PORT = process.env.PORT || 4000;
   
