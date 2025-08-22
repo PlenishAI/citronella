@@ -1,0 +1,23 @@
+{
+  "apiKeyHelper": "./apiKeyHelper.sh",
+  "env": {
+    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "LS",
+      "MultiEdit",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "includeCoAuthoredBy": true,
+  "cleanupPeriodDays": 7
+}

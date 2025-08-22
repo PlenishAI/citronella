@@ -1,3 +1,45 @@
 {
-    "postCreateCommand": "npm install && cd frontend && npm install && curl -fsSL https://claude.ai/install.sh | sh"
+    "name": "Debugging Interview Environment",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "anthropics.claude-code",
+          "ms-vsliveshare.vsliveshare",
+          "bradlc.vscode-tailwindcss",
+          "GraphQL.vscode-graphql",
+          "ms-vscode.vscode-typescript-next",
+          "esbenp.prettier-vscode",
+          "formulahendry.auto-rename-tag",
+          "ms-vscode.vscode-json"
+        ],
+        "settings": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode",
+          "typescript.preferences.importModuleSpecifier": "relative",
+          "workbench.startupEditor": "readme",
+          "terminal.integrated.defaultProfile.linux": "bash"
+        }
+      }
+    },
+    "forwardPorts": [3000, 4000],
+    "portsAttributes": {
+      "3000": {
+        "label": "Frontend",
+        "onAutoForward": "openBrowser"
+      },
+      "4000": {
+        "label": "Backend GraphQL",
+        "onAutoForward": "openPreview"
+      }
+    },
+    "postCreateCommand": "npm install && cd frontend && npm install && ./claude-setup.sh",
+    "features": {
+      "ghcr.io/devcontainers/features/node:1": {
+        "version": "18"
+      },
+      "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "containerEnv": {
+      "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+    }
   }
