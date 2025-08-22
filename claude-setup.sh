@@ -48,15 +48,15 @@ HELPER_PATH="$(pwd)/apiKeyHelper.sh"
 # Create Claude configuration directory
 mkdir -p ~/.claude
 
-# Create user-level Claude settings.json with apiKeyHelper
-echo "🔧 Creating Claude Code settings.json with apiKeyHelper..."
+# Create user-level Claude settings.json 
+# Use apiKeyHelper only if ANTHROPIC_API_KEY is not already set
+echo "🔧 Creating Claude Code settings.json..."
 
-cat > ~/.claude/settings.json << EOF
+if [ -n "$ANTHROPIC_API_KEY" ]; then
+  # If API key is already in environment, don't use apiKeyHelper
+  echo "📝 Using ANTHROPIC_API_KEY from environment (no apiKeyHelper needed)"
+  cat > ~/.claude/settings.json << EOF
 {
-  "apiKeyHelper": "$HELPER_PATH",
-  "env": {
-    "ANTHROPIC_API_KEY": "\${ANTHROPIC_API_KEY}"
-  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
@@ -76,8 +76,34 @@ cat > ~/.claude/settings.json << EOF
   "cleanupPeriodDays": 7
 }
 EOF
+else
+  # If no API key in environment, use apiKeyHelper
+  echo "📝 Using apiKeyHelper for authentication"
+  cat > ~/.claude/settings.json << EOF
+{
+  "apiKeyHelper": "$HELPER_PATH",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash",
+      "Edit", 
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "LS",
+      "MultiEdit",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "includeCoAuthoredBy": true,
+  "cleanupPeriodDays": 7
+}
+EOF
+fi
 
-echo "✅ Created ~/.claude/settings.json with apiKeyHelper: $HELPER_PATH"
+echo "✅ Created ~/.claude/settings.json"
 
 # Create project-level settings for this debugging exercise
 mkdir -p .claude

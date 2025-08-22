@@ -33,17 +33,19 @@ npm run dev
 ### Claude Code Configuration
 This repository is pre-configured to use Claude Code with Anthropic's API:
 
-1. **For GitHub Codespaces:**
+1. **For GitHub Codespaces (Recommended):**
    - Add `ANTHROPIC_API_KEY` as a Codespaces secret in your GitHub settings
    - Claude Code and Live Share extensions will auto-install
-   - Run `./claude-setup.sh` after codespace creation (automatic)
+   - Authentication uses the environment variable directly (no apiKeyHelper)
+   - Everything configures automatically on codespace creation
 
 2. **For Local Development:**
    ```bash
-   # Set your API key
+   # Option 1: Set environment variable (recommended)
    export ANTHROPIC_API_KEY="your-key-here"
+   ./claude-setup.sh
    
-   # Or use the helper script
+   # Option 2: Use the helper script (for environments without API key)
    ./apiKeyHelper.sh "your-key-here"
    ```
 
