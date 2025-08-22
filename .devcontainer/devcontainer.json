@@ -23,7 +23,7 @@
     },
     "forwardPorts": [3000, 4000],
     "portsAttributes": {
-      "3000": {
+      "3000": { 
         "label": "Frontend",
         "onAutoForward": "openBrowser"
       },

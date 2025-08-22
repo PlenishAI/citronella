@@ -1,23 +1,22 @@
 {
-  "apiKeyHelper": "./apiKeyHelper.sh",
-  "env": {
-    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
-  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
-      "Bash",
+      "Bash(npm:*, node:*, git:*)",
       "Edit",
-      "Write",
+      "Write", 
       "Read",
       "Glob",
       "Grep",
       "LS",
-      "MultiEdit",
-      "WebFetch",
-      "WebSearch"
+      "MultiEdit"
+    ],
+    "additionalDirectories": [
+      "./backend",
+      "./frontend"
     ]
   },
-  "includeCoAuthoredBy": true,
-  "cleanupPeriodDays": 7
+  "env": {
+    "NODE_ENV": "development"
+  }
 }
